@@ -1,3 +1,133 @@
+# Write-up
+This is a mock/brief write up of the challenge.
+
+## Summary
+I was able to identify a few critical vulnerabilities in the web page and the host machine that ulimately allowed root access. Weak security controls, poor patch management and proper account permissions are recommended to resolve these issues.
+
+## Attack narrative
+Whilst there are a couple of generic "prompts" available for path guidance for this machine, I chose to approach it as a black-box - using nothing but the IP as a starting point.
+
+## Findings
+
+### Joomla CMS SQLi vulnerability
+- Outdated Joomla version is still in use and is vulnerable to injection.
+
+### Steps to reproduce 
+- Run a script such as one found here https://github.com/stefanlucas/Exploit-Joomla/blob/master/joomblah.py from the terminal or attempt manual SQLi via input fields.
+
+### Expected result
+- No sensetive information should be returned on malicious entry input.
+
+### Actual result
+- The app returns a list of registered users and their password hashes.
+
+### Recommendations
+- Update to the latest version of Joomala CMS.
+- Enforce input validation/ sanitization to prevent generic SQLi
+- Ensure hashes are at least salted to discourage basic hash brute force.
+
+---
+
+### php shell upload
+- By accessing the `templates` menu I was able to upload the code for a reverse php shell, gaining access to the host.
+
+### Steps to reproduce
+- From the Dashboard, go to `Configuration` , `Templates` and `Protostar`. 
+- Enter code for your desired shell and save.
+- Set up a listener on your machine.
+- Navigate to `MACHINE_IP/templates/protostar/SHEEL_FILE_NAME`
+- Check listener for your shell.
+
+
+### Expected result
+- No malicious shell code should be able to be uploaded.
+
+### Actual result
+- Reverse shell can be placed in the templates folder.
+
+### Recommendations
+- Update to the latest version of Joomala CMS.
+- Reduce the number of accounts that can upload code to the host and ensure they are properly secured.
+- Check/ modify .htaccess file to configure who can access writeable files.
+- Implement code validation / authorization on sensetive, writable files to ensure they can not be edited without approval.
+
+---
+
+### User account access via clear text password storage
+- By viewing a php.config file I was able to gain a password for a user account.
+
+### Steps to reproduce
+- Read or navigate to the applications php.config file to view user passwords.
+
+### Expected result
+- Clear text passwords should not be visable.
+
+### Actual result
+- Able to view user passwords
+
+### Recommendations
+- Restrict read/ access permissions to .config files
+- Store passwords securely - salted hashes, restricted access 
+
+---
+
+### Weak permissions allowed root access
+- The user account was able to be elvated to root via executing `yum` as root.
+
+### Steps to reproduce
+- Once logged into the user account, spawn a root shell via yum : 
+
+``` 
+TF=$(mktemp -d)
+cat >$TF/x<<EOF
+[main]
+plugins=1
+pluginpath=$TF
+pluginconfpath=$TF
+EOF
+
+cat >$TF/y.conf<<EOF
+[main]
+enabled=1
+EOF
+
+cat >$TF/y.py<<EOF
+import os
+import yum
+from yum.plugins import PluginYumExit, TYPE_CORE, TYPE_INTERACTIVE
+requires_api_version='2.1'
+def init_hook(conduit):
+  os.execl('/bin/sh','/bin/sh')
+EOF
+
+sudo yum -c $TF/x --enableplugin=y 
+``` 
+
+### Expected result
+- Privesc should not be possible via running the yum command
+
+### Actual result
+- The command spawns a root shell.
+
+### Recommendations
+- Check account privileges and who can run which commands as `sudo`. Follow the principle of Least Privilage.
+
+--- 
+
+### General Recommendations
+- Hide/ forbid sensitive pages such as /administrator from being discoverable/ accessible from the public facing website to prevent unwanted access and/or tampering.
+
+
+---
+
+# Walkthrough
+This is a more step by step of the actual process of hacking the machine.
+Technologies/tools used:
+- nmap
+- gobuster
+- JohnTheRipper
+- linpeas
+
 
 ## Enumeration
 Starting out with a basic scan we can see there are a couple of ports open.
