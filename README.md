@@ -1,8 +1,8 @@
 # Write-up
-This is a mock/brief write up of the challenge.
+This is designed to be a "real-world" write up of the Daily Bugle challenge on TryHackMe.
 
 ## Summary
-I was able to identify a few critical vulnerabilities in the web page and the host machine that ulimately allowed root access. Weak security controls, poor patch management and proper account permissions are recommended to resolve these issues.
+I was able to identify a few critical vulnerabilities in the web page and the host machine that ulimately allowed root access. Proper security controls, patch management and account permissions are recommended to resolve these issues.
 
 ## Attack narrative
 Whilst there are a couple of generic "prompts" available for path guidance for this machine, I chose to approach it as a black-box - using nothing but the IP as a starting point.
@@ -10,7 +10,7 @@ Whilst there are a couple of generic "prompts" available for path guidance for t
 ## Findings
 
 ### Joomla CMS SQLi vulnerability
-- Outdated Joomla version is still in use and is vulnerable to injection.
+- Outdated Joomla version is still in use and is vulnerable to injection (CVE-2017-8917).
 
 ### Steps to reproduce 
 - Run a script such as one found here https://github.com/stefanlucas/Exploit-Joomla/blob/master/joomblah.py from the terminal or attempt manual SQLi via input fields.
@@ -112,10 +112,39 @@ sudo yum -c $TF/x --enableplugin=y
 ### Recommendations
 - Check account privileges and who can run which commands as `sudo`. Follow the principle of Least Privilage.
 
+---
+
+### Polkit exploited to give root level access
+- Exploited an outdated version of Polkit to elevate permissions (CVE-2021-4034).
+
+### Steps to reproduce
+- Craft and place the 3 files found here : https://packetstormsecurity.com/files/165739/PolicyKit-1-0.105-31-Privilege-Escalation.html on the victims machine.
+- Compile and run the exploit for root.
+
+### Expected result
+- Polkit should not grant any form of elevated account access to a non-user.
+
+### Actual result
+- A user can gain root level account access.
+
+### Recommendations
+- Update Polkit to the latest version.
+- Restrict which accounts can up/download files, compile code and run scripts. (General permissions control)
+
+
 --- 
 
 ### General Recommendations
 - Hide/ forbid sensitive pages such as /administrator from being discoverable/ accessible from the public facing website to prevent unwanted access and/or tampering.
+
+---
+
+## Conclusion
+
+The application contatied multiple critical level vulnerabilities that ultimately lead to an unregistered web user gaining root level access on the host machine. Follow the suggested recommendations and implement proper permissions to harden the system and prevent future compromise.
+
+### Clean-up steps
+All shells were closed and malicious code/files were removed from the system.
 
 
 ---
